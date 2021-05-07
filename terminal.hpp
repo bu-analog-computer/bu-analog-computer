@@ -31,15 +31,15 @@ for the Arduino.
 		#define COMMAND_HELP 'h' // list all commands available
 		#define COMMAND_MUX_SELECT 'm' // Select which mux input to read from (0-F)
     #define COMMAND_TRIGGER 't' // Set the trigger
-    #define COMMAND_TRIGGER_HIGH 'J'
-    #define COMMAND_TRIGGER_LOW 'j'
-    
+    #define COMMAND_TRIGGER_HIGH 'J' // Turn the trigger on
+    #define COMMAND_TRIGGER_LOW 'j' // Turn the trigger off
 
-    #define COMMAND_HIGH_BYTE 'B'
-    #define COMMAND_LOW_BYTE 'b'
+    #define COMMAND_HIGH_BYTE 'B' // Set the high byte for the PWM value
+    #define COMMAND_LOW_BYTE 'b' // Set the low byte for the PWM value
+    /// Yes I know they're nibbles and not bytes >:(
 		#define COMMAND_INITIAL_CONDITIONS 'N' // set the initial conditions using an 4-character command
 		#define COMMAND_CONSTANT_MULTIPLIER 'M' // set the constant multiplier conditions using a 4-character command
-    //#define COMMAND_RESET_ALL_PINS 'R' // set all PWM pins back to 0V (50% duty cycle)
+    #define COMMAND_RESET_ALL_PINS 'R' // set all PWM pins back to 0V (50% duty cycle)
 	#endif
 
 	void Terminal_initialize();

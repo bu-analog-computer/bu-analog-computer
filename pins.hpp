@@ -16,8 +16,7 @@ to communicate with the plugboard.
 #define PINS_H
 
 	/** PWM Outputs **/ // Capable of values 0-128-255 (+15V - 0 - -15V)
-	#define PWM_ZERO_VOLTS 128 // Because PWM 128 = 50% duty cycle = 0V
- 
+
 	// Used for the Initial Conditions
 	#define PWM0 2 // Int1
 	#define PWM1 12 // Int2
@@ -50,12 +49,15 @@ to communicate with the plugboard.
 	
 	/** Function Declarations **/
 	void Arduino_IO_initialize(); // Initialize all pins above as inputs/outputs
+  void reset_pwm_pins(); // Sets all PWM pins to 50% duty cycle (0V)
 	void turn_on_trigger(); // Turn on the integration trigger signal
 	void turn_off_trigger(); // Turn off the integration trigger signal
 	void pulse_trigger(); // Gives us a rapid pulse for the trigger to initialize the integrators
+	void print_selected_mux();
 	void mux_select(uint8_t code); // Control the 4-bit MUX select signal with a 4-bit value
 	Sample read_Sample_from_ADC(); // Reads the 12-bit value in the ADC
 
+  uint8_t bit0, bit1, bit2, bit3;
   uint8_t PWM_value;
 
   void set_initial_condition(uint8_t number, uint8_t pwm_value);
@@ -64,5 +66,6 @@ to communicate with the plugboard.
   void off_constant_coefficient(uint8_t number);
   void set_high_byte(uint8_t high_byte);
   void set_low_byte(uint8_t low_byte);
+  int8_t pwm_to_voltage(uint8_t pwm_value);
 
 #endif

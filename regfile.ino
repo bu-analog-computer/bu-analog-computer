@@ -24,7 +24,7 @@ void RegFile_clear_SampleRegister(uint8_t reg_id){
 }
 
 SampleRegister RegFile_read_SampleRegister(uint8_t reg_id){
-  if(!RegFile_valid_register(reg_id)) reg_id = 0;
+  if(!RegFile_valid_register(reg_id)) reg_id = 0; // Prevent writing to nonsense registers
   return GlobalRegister(reg_id);
 }
 

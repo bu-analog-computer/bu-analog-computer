@@ -10,6 +10,24 @@ written by Jonah Hendler & Ashley Granieri
 #include "sample.hpp"
 #include "pins.hpp"
 
+#ifndef PWM_ZERO_VOLTS
+  #define PWM_ZERO_VOLTS 128 // Because PWM 128 = 50% duty cycle = 0V
+#endif
+void reset_pwm_pins(){
+  analogWrite(PWM0,PWM_ZERO_VOLTS);
+  analogWrite(PWM1,PWM_ZERO_VOLTS);
+  analogWrite(PWM2,PWM_ZERO_VOLTS);
+  analogWrite(PWM3,PWM_ZERO_VOLTS);
+  analogWrite(PWM4,PWM_ZERO_VOLTS);
+  analogWrite(PWM5,PWM_ZERO_VOLTS);
+  analogWrite(PWM6,PWM_ZERO_VOLTS);
+  analogWrite(PWM7,PWM_ZERO_VOLTS);
+  analogWrite(PWM8,PWM_ZERO_VOLTS);
+  analogWrite(PWM9,PWM_ZERO_VOLTS);
+  analogWrite(PWM10,PWM_ZERO_VOLTS);
+  analogWrite(PWM11,PWM_ZERO_VOLTS);  
+}
+
 void Arduino_IO_initialize(){
 	/** PWM Outputs **/ // Capable of values 0-1023
 	// Used for the Initial Conditions
@@ -50,18 +68,7 @@ void Arduino_IO_initialize(){
 	pinMode(TRIGGER, OUTPUT); // Start integrators & other components
 
   /** Initialize Values **/
-  analogWrite(PWM0,PWM_ZERO_VOLTS);
-  analogWrite(PWM1,PWM_ZERO_VOLTS);
-  analogWrite(PWM2,PWM_ZERO_VOLTS);
-  analogWrite(PWM3,PWM_ZERO_VOLTS);
-  analogWrite(PWM4,PWM_ZERO_VOLTS);
-  analogWrite(PWM5,PWM_ZERO_VOLTS);
-  analogWrite(PWM6,PWM_ZERO_VOLTS);
-  analogWrite(PWM7,PWM_ZERO_VOLTS);
-  analogWrite(PWM8,PWM_ZERO_VOLTS);
-  analogWrite(PWM9,PWM_ZERO_VOLTS);
-  analogWrite(PWM10,PWM_ZERO_VOLTS);
-  analogWrite(PWM11,PWM_ZERO_VOLTS);
+  reset_pwm_pins();
   digitalWrite(MUX_SELECT_0,LOW);
   digitalWrite(MUX_SELECT_1,LOW);
   digitalWrite(MUX_SELECT_2,LOW);
@@ -79,7 +86,7 @@ void turn_off_trigger(){
 }
 
 #ifndef TRIGGER_PULSE_DELAY
-	#define TRIGGER_PULSE_DELAY 1000
+	#define TRIGGER_PULSE_DELAY 100
 #endif
 void pulse_trigger(){
 	turn_on_trigger();
@@ -87,18 +94,22 @@ void pulse_trigger(){
 	turn_off_trigger();	
 }
 
+void print_selected_mux(){
+  Serial.print("MUX_SELECT=");
+  Serial.print(bit3);
+  Serial.print(bit2);
+  Serial.print(bit1);
+  Serial.println(bit0);
+}
+
 void mux_select(uint8_t code){
 	// This isolates which bits in the 4-bit code are on vs. off
-	bool bit0 = (code & 0b00000001);
-	bool bit1 = (code & 0b00000010);
-	bool bit2 = (code & 0b00000100);
-	bool bit3 = (code & 0b00001000);
+	bit0 = (code & 0b00000001)>>0;
+	bit1 = (code & 0b00000010)>>1;
+	bit2 = (code & 0b00000100)>>2;
+	bit3 = (code & 0b00001000)>>3;
 	
-	/*Serial.print("MUX_SELECT=");
-	Serial.print(bit3);
-	Serial.print(bit2);
-	Serial.print(bit1);
-	Serial.println(bit0);*/
+  print_selected_mux();
 	
 	// Converts from true/false to HIGH/LOW (idk if this is necessary?)
 	digitalWrite(MUX_SELECT_0, HIGH ? bit0 : LOW);
@@ -117,12 +128,15 @@ Sample read_Sample_from_ADC(){
 // 0 - always off, 255 - always on
 static void set_pwm_pin(uint8_t number, uint8_t pwm_value){
   switch(number){
+    // Integrators
     case 0: analogWrite(PWM0, pwm_value); break;
     case 1: analogWrite(PWM1, pwm_value); break;
     case 2: analogWrite(PWM2, pwm_value); break;
     case 3: analogWrite(PWM3, pwm_value); break;
     case 4: analogWrite(PWM4, pwm_value); break;
     case 5: analogWrite(PWM5, pwm_value); break;
+
+    // Constant Multipliers
     case 6: analogWrite(PWM6, pwm_value); break;
     case 7: analogWrite(PWM7, pwm_value); break;
     case 8: analogWrite(PWM8, pwm_value); break;
@@ -134,13 +148,28 @@ static void set_pwm_pin(uint8_t number, uint8_t pwm_value){
 }
 
 void set_initial_condition(uint8_t number, uint8_t pwm_value){
-  if(number>5) number = 0;
+  number--; // Because integrator 1 is actually integrator 0
+  if(number<0 || number>5) return; // Error prevention
   set_pwm_pin(number, pwm_value);
+  Serial.print("Integrator [");
+  Serial.print(number+1);
+  Serial.print("] <= ");
+  Serial.print(pwm_value);
+  Serial.print(" ~= ");
+  Serial.print(PWM2Voltage(pwm_value));
+  Serial.println("V");
 }
 void set_constant_coefficient(uint8_t number, uint8_t pwm_value){
-  uint8_t new_pin_number = number+6; // b/c 6 initial conditions first
-  if(number>11) number = 6;
+  uint8_t new_pin_number = number+6-1; // Because const coeff 1 is actually const coeff 0 + offset of 6
+  if(number<5 || number>11) return; // Error prevention
   set_pwm_pin(new_pin_number, pwm_value);
+  Serial.print("Const Mult [");
+  Serial.print(number+1);
+  Serial.print("] <= ");
+  Serial.print(pwm_value);
+  Serial.print(" ~= ");
+  Serial.print(PWM2Voltage(pwm_value));
+  Serial.println("V");
 }
 void off_initial_condition(uint8_t number){
   set_initial_condition(number,0);
@@ -149,11 +178,39 @@ void off_constant_coefficient(uint8_t number){
   set_constant_coefficient(number,0);
 }
 
+#ifndef BIT_MASKS
+  #define LOW_BIT_MASK 0xF0
+  #define HIGH_BIT_MASK 0x0F
+#endif
 void set_high_byte(uint8_t high_byte){
-  PWM_value &= 0x0F;
-  PWM_value |= (0x0F & high_byte)<<4;
+  PWM_value &= HIGH_BIT_MASK;
+  PWM_value |= (HIGH_BIT_MASK & high_byte)<<4;
 }
 void set_low_byte(uint8_t low_byte){
-  PWM_value &= 0xF0;
-  PWM_value |= (0x0F & low_byte);
+  PWM_value &= LOW_BIT_MASK;
+  PWM_value |= (LOW_BIT_MASK & low_byte);
+}
+
+
+int8_t PWM2Voltage(uint8_t pwm_value){ // Very rough approximation of PWM to Voltage reading
+  uint8_t high_nibble = (pwm_value&0xF0)>>4;
+  switch(high_nibble){
+    default: return 99; // How you know you messed up
+    case 0: return 15;
+    case 1: return 14;
+    case 2: return 12;
+    case 3: return 10;
+    case 4: return 8;
+    case 5: return 6;
+    case 6: return 4;
+    case 7: return 2;
+    case 8: return 0;
+    case 9: return -2;
+    case 10: return -4;
+    case 11: return -6;
+    case 12: return -8;
+    case 13: return -11;
+    case 14: return -13;
+    case 15: return -15;
+  }
 }

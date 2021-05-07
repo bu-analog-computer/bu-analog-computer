@@ -33,15 +33,13 @@ void populate_SampleRegister_with_samples(uint8_t reg_id); // Load samples into 
 
 /***********************************/
 
-int8_t t_scale = 1, y_scale = 1; // Global variables used for plotting
 /** TODO: ADD a method to modify these**/
+int8_t t_scale = 1, y_scale = 1; // Global variables used for plotting
 
 void SampleRegister_plot(SampleRegister sr); // Plot a sample register according to t_scale & y_scale
 
 /***********************************/
 
-/** TODO: REMOVE, just for testing **/
-void print_SampleRegister(SampleRegister sr);
 bool FSM_print_SampleRegister(SampleRegister sr, bool reset_val);
 
 #endif

@@ -23,7 +23,8 @@ static bool is_command_char(uint8_t c){ // 1 to 1 correspondence with 2-Characte
     c==COMMAND_CONSTANT_MULTIPLIER ||
     c==COMMAND_TRIGGER ||
     c==COMMAND_TRIGGER_HIGH ||
-    c==COMMAND_TRIGGER_LOW
+    c==COMMAND_TRIGGER_LOW ||
+    c==COMMAND_RESET_ALL_PINS
     );
 }
 
@@ -38,13 +39,14 @@ static void print_command_list(){
 	Serial.println("c - (c)lear a register");
 	Serial.println("? - list global stats");
 	Serial.println("h - (h)elpful list all commands available");
-	Serial.println("m - Set (m)ux inputs");
-  Serial.println("t - Set the (t)rigger");
+	Serial.println("m - set (m)ux inputs");
+  Serial.println("t - pulse the (t)rigger");
 	Serial.println("-------------------");	
-	Serial.println("b - Set the low (b)yte for ICs / CMs");
-  Serial.println("B - Set the high (B)yte for ICs / CMs");
+	Serial.println("b - set the low (b)yte for ICs / CMs");
+  Serial.println("B - set the high (B)yte for ICs / CMs");
 	Serial.println("N - set the i(N)itial conditions");
 	Serial.println("M - set the constant (M)ultiplier");
+  Serial.println("R - (R)eset all PWM pins to 50% duty cylce (0V)");
 	Serial.println("-------------------");
 }
 
@@ -67,10 +69,6 @@ static uint8_t hex2dec(char c){
  * 128 = 0V
  * 0 = 15V
  */
-
-static uint8_t PWM2Voltage(uint8_t pwm_value){
-  return 0;
-}
 
 // FSM for the keyboard inputs (this is the meat and potatoes)
 void FSM_Serial_Control(uint8_t char_read){
@@ -154,8 +152,9 @@ void FSM_Serial_Control(uint8_t char_read){
         Serial.println(Master_Sampling_Count);
         Serial.print("PWM_VALUE=");
         Serial.print(PWM_value);
-        Serial.print("PWM VOLTAGE=");
+        Serial.print("PWM VOLTAGE~=");
         Serial.println(PWM2Voltage(PWM_value));
+        print_selected_mux();
         current_state = st_Newline;
       }
       else if (command_char == COMMAND_HELP){
@@ -200,6 +199,11 @@ void FSM_Serial_Control(uint8_t char_read){
       else if(command_char == COMMAND_TRIGGER_LOW){
         Serial.println("TRIGGERLOW");
         turn_off_trigger();
+        current_state = st_Newline;
+      }
+      else if(command_char == COMMAND_RESET_ALL_PINS){
+        Serial.println("RESETALLPWM");
+        reset_pwm_pins();
         current_state = st_Newline;
       }
       break;

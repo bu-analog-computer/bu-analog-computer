@@ -86,7 +86,7 @@ bool set_Sample(SampleRegister* sr, Sample s, uint8_t index){
 
 void populate_SampleRegister_with_samples(uint8_t reg_id){
   pulse_trigger(); // Necessary to begin integration
-  
+  digitalWrite(MUX_ENABLE,HIGH);
   RegFile_set_num_samples_SampleRegister(reg_id, Master_Sampling_Count);
   RegFile_clear_SampleRegister(reg_id);
   for(uint8_t sr_i = 0; sr_i<Master_Sampling_Count; sr_i++){
@@ -97,11 +97,8 @@ void populate_SampleRegister_with_samples(uint8_t reg_id){
     }
     
     delay(Master_Sampling_Rate);
-    /*for(uint8_t i = 0; i<Master_Sampling_Rate; i++){ //Delay loop so no double reading of samples
-      //Serial.print("DELAY:");
-      //Serial.println(i);
-    }*/
   }
+  digitalWrite(MUX_ENABLE,LOW);
 }
 
 /***********************************/
@@ -131,6 +128,8 @@ static Sample max_Sample(SampleRegister sr){
   return highest_value;
 }
 
+#define T_MAX_SCALE 10
+
 void SampleRegister_plot(SampleRegister sr){
   Serial.println();
   uint16_t t_min = 0, t_max = sr.num_samples;
@@ -148,7 +147,7 @@ void SampleRegister_plot(SampleRegister sr){
   if(y_scale > 0) y_scale_double = (double)(y_scale);
   else if(y_scale < 0) y_scale_double = 1.0/(double)(-y_scale);
   
-  for(double i = t_min; i<t_max; i+=t_scale_double){
+  for(double i = t_min; i<t_max/T_MAX_SCALE; i+=t_scale_double){
     uint8_t sample_index = (uint8_t)(i);
     Sample s = sr.samples[sample_index];
     s = (Sample)((double)(s) * y_scale_double);
@@ -162,18 +161,7 @@ void SampleRegister_plot(SampleRegister sr){
 }
 
 /***********************************/
-/** Functions for Testing (TODO: REMOVE) **/
-
-void print_SampleRegister(SampleRegister sr){
-  char printfbuf[64];
-  sprintf(printfbuf,"--SampleRegister[%d]: num_samples=%d, time_sampled=%d, is_dirty=%s, last_index=%d\n", sr.reg_id, sr.num_samples, sr.time_sampled, sr.dirty?"YES":"NO", sr.last_index);
-  Serial.print(printfbuf);
-  for(int16_t i = 0; i<sr.num_samples; i++){
-    sprintf(printfbuf,"%4d : %d",i,sr.samples[i]);
-    Serial.print(printfbuf);
-  }
-  Serial.print("----\n");
-}
+/** Functions for Testing Registers **/
 
 bool FSM_print_SampleRegister(SampleRegister sr, bool reset_val){
   static enum PSR_State{
