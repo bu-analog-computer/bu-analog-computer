@@ -135,6 +135,7 @@ void FSM_Serial_Control(uint8_t char_read){
         current_state = st_Newline;
       }
       else if (command_char == COMMAND_PRINT_REG){ // Fully Works!
+        if(reg_id<0 || reg_id>MAX_NUM_REGISTERS) break;
         bool psr_done = FSM_print_SampleRegister(GlobalRegFile.registers[reg_id], fsm_reseter);
         if(psr_done){
           current_state = st_Newline;

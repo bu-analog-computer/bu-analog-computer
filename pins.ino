@@ -119,40 +119,52 @@ void mux_select(uint8_t code){
 }
 
 #ifndef ADC_SCALING_FACTOR
-	#define ADC_SCALING_FACTOR 1
+	#define ADC_SCALING_FACTOR 64
 #endif
 Sample read_Sample_from_ADC(){
-	return analogRead(MUX_DATA_IN)/ADC_SCALING_FACTOR;
+  uint16_t mux_data = analogRead(MUX_DATA_IN);
+  if(mux_data<124) mux_data = 124;
+  else if(mux_data>961) mux_data = 961;
+  double mux_data_double = (double)(analogRead(MUX_DATA_IN));
+  double real_value = mux_data_double * 1.22342 - 151.704;
+  if(real_value<0) real_value = 0;
+  else if(real_value>1024) real_value = 1024;
+  return (Sample)(real_value);
+	//return analogRead(MUX_DATA_IN)/ADC_SCALING_FACTOR;
 }
 
 // 0 - always off, 255 - always on
-static void set_pwm_pin(uint8_t number, uint8_t pwm_value){
+static void set_ic_pin(uint8_t number, uint8_t pwm_value){
   switch(number){
     // Integrators
-    case 0: analogWrite(PWM0, pwm_value); break;
-    case 1: analogWrite(PWM1, pwm_value); break;
-    case 2: analogWrite(PWM2, pwm_value); break;
-    case 3: analogWrite(PWM3, pwm_value); break;
-    case 4: analogWrite(PWM4, pwm_value); break;
-    case 5: analogWrite(PWM5, pwm_value); break;
+    case 1: analogWrite(PWM0, pwm_value); break;
+    case 2: analogWrite(PWM1, pwm_value); break;
+    case 3: analogWrite(PWM2, pwm_value); break;
+    case 4: analogWrite(PWM3, pwm_value); break;
+    case 5: analogWrite(PWM4, pwm_value); break;
+    case 6: analogWrite(PWM5, pwm_value); break;
+    default: break;
+  }
+}
 
+static void set_cm_pin(uint8_t number, uint8_t pwm_value){
+  switch(number){
     // Constant Multipliers
-    case 6: analogWrite(PWM6, pwm_value); break;
-    case 7: analogWrite(PWM7, pwm_value); break;
-    case 8: analogWrite(PWM8, pwm_value); break;
-    case 9: analogWrite(PWM9, pwm_value); break;
-    case 10: analogWrite(PWM10, pwm_value); break;
-    case 11: analogWrite(PWM11, pwm_value); break;
+    case 1: analogWrite(PWM6, pwm_value); break;
+    case 2: analogWrite(PWM7, pwm_value); break;
+    case 3: analogWrite(PWM8, pwm_value); break;
+    case 4: analogWrite(PWM9, pwm_value); break;
+    case 5: analogWrite(PWM10, pwm_value); break;
+    case 6: analogWrite(PWM11, pwm_value); break;
     default: break;
   }
 }
 
 void set_initial_condition(uint8_t number, uint8_t pwm_value){
-  number--; // Because integrator 1 is actually integrator 0
-  if(number<0 || number>5) return; // Error prevention
-  set_pwm_pin(number, pwm_value);
+  if(number<1 || number>6) return; // Error prevention
+  set_ic_pin(number, pwm_value);
   Serial.print("Integrator [");
-  Serial.print(number+1);
+  Serial.print(number);
   Serial.print("] <= ");
   Serial.print(pwm_value);
   Serial.print(" ~= ");
@@ -160,16 +172,16 @@ void set_initial_condition(uint8_t number, uint8_t pwm_value){
   Serial.println("V");
 }
 void set_constant_coefficient(uint8_t number, uint8_t pwm_value){
-  uint8_t new_pin_number = number+6-1; // Because const coeff 1 is actually const coeff 0 + offset of 6
-  if(number<5 || number>11) return; // Error prevention
-  set_pwm_pin(new_pin_number, pwm_value);
+  if(number<1 || number>6) return; // Error prevention
+  set_cm_pin(number, pwm_value);
   Serial.print("Const Mult [");
-  Serial.print(number+1);
+  Serial.print(number);
   Serial.print("] <= ");
   Serial.print(pwm_value);
   Serial.print(" ~= ");
   Serial.print(PWM2Voltage(pwm_value));
   Serial.println("V");
+
 }
 void off_initial_condition(uint8_t number){
   set_initial_condition(number,0);

@@ -39,6 +39,7 @@ void set_Master_Sampling_Rate(uint8_t sampling_rate){
 
 void set_Master_Sampling_Count(uint8_t num_samples){
   Master_Sampling_Count = 16 + num_samples * 16; // This worked best but subject to change
+  if(Master_Sampling_Count>127) Master_Sampling_Count=127;
 }
 
 /***********************************/
@@ -46,7 +47,7 @@ void set_Master_Sampling_Count(uint8_t num_samples){
 
 /* Empty an array of samples */
 static void clean_samples(Sample* samples, uint16_t num_samples){
-  for(uint16_t i = 0; i<num_samples; i++){
+  for(uint16_t i = 0; i<MAX_NUM_SAMPLES; i++){
     samples[i] = 0;
   }
 }
@@ -76,7 +77,7 @@ SampleRegister new_SampleRegister(uint8_t reg_id, uint16_t num_samples, uint16_t
 }
 
 bool set_Sample(SampleRegister* sr, Sample s, uint8_t index){
-  if(!has_sample_room(*sr)) return false; // No more room --> false
+  //if(!has_sample_room(*sr)) return false; // No more room --> false
 
   sr->samples[index] = s;
   sr->last_index = index;
@@ -96,7 +97,7 @@ void populate_SampleRegister_with_samples(uint8_t reg_id){
       break;
     }
     
-    delay(Master_Sampling_Rate);
+    delay(Master_Sampling_Rate*10);
   }
   digitalWrite(MUX_ENABLE,LOW);
 }
@@ -128,7 +129,7 @@ static Sample max_Sample(SampleRegister sr){
   return highest_value;
 }
 
-#define T_MAX_SCALE 10
+#define Y_MAX_SCALE 10
 
 void SampleRegister_plot(SampleRegister sr){
   Serial.println();
@@ -147,10 +148,11 @@ void SampleRegister_plot(SampleRegister sr){
   if(y_scale > 0) y_scale_double = (double)(y_scale);
   else if(y_scale < 0) y_scale_double = 1.0/(double)(-y_scale);
   
-  for(double i = t_min; i<t_max/T_MAX_SCALE; i+=t_scale_double){
+  for(double i = t_min; i<t_max; i+=t_scale_double){
     uint8_t sample_index = (uint8_t)(i);
     Sample s = sr.samples[sample_index];
-    s = (Sample)((double)(s) * y_scale_double);
+    s = (Sample)((double)(s) * y_scale_double)/Y_MAX_SCALE;
+    if(s>200) s=200;
     char printfbuf[32];
     sprintf(printfbuf,"%4d|",sample_index);
     Serial.print(printfbuf);
@@ -192,7 +194,7 @@ bool FSM_print_SampleRegister(SampleRegister sr, bool reset_val){
       sprintf(printfbuf,"%4d : %d",line_counter,sr.samples[line_counter]);
       Serial.println(printfbuf);
       line_counter++;
-      if(line_counter>=sr.num_samples) current_state = st_PSR_End;
+      if(line_counter>=sr.num_samples || line_counter>1024) current_state = st_PSR_End;
       break;
     case st_PSR_End:
       Serial.println("----");
